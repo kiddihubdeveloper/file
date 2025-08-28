@@ -18,18 +18,16 @@ export default function (port) {
     // store: ... , // Redis, Memcached, etc. See below.
   });
 
+  /** Add middlewares */
   app.use(middlewares.cors);
-  
   app.use(express.urlencoded({ extended: true }));
-  /** Parse JSON bodies */
   app.use(express.json());
-  /** Trust proxy */
-  app.set("trust proxy", 1);
+
   /** Initialize API routes */
   app.use("/", createRouter());
-  /** Apply rate limiting */
+  /** */
   app.use(limiter);
-  /** Start the server */
+
   app.listen(port, () => {
     console.log(`[INFO] Express Server: Server is listening on port ${port}`);
   });
