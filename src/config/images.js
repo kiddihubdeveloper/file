@@ -5,7 +5,7 @@ export default {
       tablet: { width: 111, height: 111 },
       desktop: { width: 128, height: 128 },
     },
-    "school-photo": {
+    "school-thumbnail": {
       mobile: [{ width: 369, height: 230 }],
       tablet: [],
       desktop: [
@@ -26,5 +26,8 @@ export default {
       desktop: { width: 638, height: 359 },
     },
   },
-  ads: {},
+  original: {
+    "school-photos": { max_width: 966, max_height: 644 },
+    content: { max_width: 966, max_height: 644 },
+  },
 };

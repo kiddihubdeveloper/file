@@ -34,27 +34,37 @@ export default {
    * @param {{width: number, height: number}} config
    */
   async makeOne(file, config) {
-    const { buffer, originalname } = await readFile(file);
-    const image = await Jimp.fromBuffer(buffer);
-    const { x, y, width, height } = calcSize(
-      image,
-      config.width,
-      config.height
-    );
-    image.crop({
-      x,
-      y,
-      w: width,
-      h: height,
-    });
-    image.resize({
-      w: config.width,
-      h: config.height,
-      mode: Jimp.RESIZE_BILINEAR,
-    });
-    const newFilePath = `tmp/digest/${originalname}`;
-    await image.write(newFilePath);
-    return newFilePath;
+    try {
+      const { buffer, originalname } = await readFile(file);
+
+      const image = await Jimp.fromBuffer(buffer);
+      const { x, y, width, height } = calcSize(
+        image,
+        config.width,
+        config.height
+      );
+      image.crop({
+        x,
+        y,
+        w: width,
+        h: height,
+      });
+      image.resize({
+        w: config.width,
+        h: config.height,
+        mode: Jimp.RESIZE_BILINEAR,
+      });
+      const fs = await import("fs/promises");
+      const path = await import("path");
+      const dir = path.dirname(`tmp/digest/${originalname}`);
+      await fs.mkdir(dir, { recursive: true });
+      const newFilePath = `tmp/digest/${originalname}`;
+      await image.write(newFilePath);
+      return newFilePath;
+    } catch (err) {
+      console.error("[Thumnail.makeOne] ERROR:", err, file);
+      throw err;
+    }
   },
   /**
    * Make many thumbnails from an array of image files.

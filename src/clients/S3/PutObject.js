@@ -17,23 +17,22 @@ function storeKey(originalname, customname = null) {
 /**
  * Upload a file to S3 storage
  * @param {Express.Multer.File} file
- * @param {string|null} customname
+ * @param {string} key - Full S3 key path (e.g., "prefix/filename.ext")
  * @return {Promise<{filename:string}>}
  */
-export default async function (file, customname = null) {
+export default async function (file, key) {
   try {
-    const { buffer, contentType, originalname } = await readFile(file);
-    const filename = storeKey(originalname, customname);
+    const { buffer, contentType } = await readFile(file);
     await S3Client.send(
       new PutObjectCommand({
         Body: buffer,
         ContentType: contentType,
         Bucket: aws.s3.bucket,
         ACL: "public-read",
-        Key: filename,
+        Key: key,
       })
     );
-    return { filename };
+    return { filename: key };
   } catch (error) {
     exceptionHandler(error);
   }
