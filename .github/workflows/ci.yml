@@ -36,13 +36,14 @@ jobs:
       - name: Install dependencies
         run: |
           echo "${{ secrets.DEPLOY_TEST_ENV }}" > .env
+          npm ci
 
       - name: Save build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: nuxt-build
           path: |
-            .nuxt/
+            node_modules
 
   # === Deploy Test stage ===
   deployTest:
