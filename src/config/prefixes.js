@@ -2,7 +2,15 @@
  * Prefix configuration for uploads
  * Defines allowed prefixes for organizing files
  */
-export const UPLOAD_PREFIXES = ["avatar", "1"];
+export const UPLOAD_PREFIXES = [
+  "default",
+  "1",
+  "tieu-chi",
+  "news",
+  "avatars",
+  "user",
+  "avatar-review",
+];
 
 export const DEFAULT_PREFIX = "images";
 
