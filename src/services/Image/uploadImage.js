@@ -30,15 +30,20 @@ export default async function uploadImage(files, category, prefix = null) {
   const thumbConfig = imagesConfig.thumbnails[category];
   const origConfig = imagesConfig.original[category];
 
-  // Handle array uploads with thumbnail processing
-  if (isArray && thumbConfig) {
+  // Handle array uploads with thumbnail processing or original processing
+  if (isArray && (thumbConfig || origConfig)) {
     // Special case for school-thumbnail: return object with device types
     if (category === "school-thumbnail") {
       return await handleSchoolThumbnail(fileList, thumbConfig, folderPrefix);
     }
 
     // Other categories: process each file for each device, return flat array
-    return await handleOtherCategories(fileList, thumbConfig, folderPrefix);
+    return await handleOtherCategories(
+      fileList,
+      thumbConfig,
+      origConfig,
+      folderPrefix
+    );
   }
 
   // Handle single file or non-thumbnail uploads

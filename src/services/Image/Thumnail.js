@@ -9,6 +9,17 @@ import readFile from "../../clients/S3/support/ReadFile.js";
  */
 function calcSize(image, targetWidth, targetHeight) {
   const { width, height } = image.bitmap;
+
+  // Validate inputs
+  if (!width || !height || width <= 0 || height <= 0) {
+    throw new Error(`Invalid image dimensions: ${width}x${height}`);
+  }
+  if (!targetWidth || !targetHeight || targetWidth <= 0 || targetHeight <= 0) {
+    throw new Error(
+      `Invalid target dimensions: ${targetWidth}x${targetHeight}`
+    );
+  }
+
   const targetRatio = targetWidth / targetHeight;
   const sourceRatio = width / height;
   let cropWidth, cropHeight;
@@ -24,6 +35,14 @@ function calcSize(image, targetWidth, targetHeight) {
   }
   const x = Math.floor((width - cropWidth) / 2);
   const y = Math.floor((height - cropHeight) / 2);
+
+  // Final validation to ensure no NaN values
+  if (isNaN(x) || isNaN(y) || isNaN(cropWidth) || isNaN(cropHeight)) {
+    throw new Error(
+      `Invalid crop calculations: x=${x}, y=${y}, width=${cropWidth}, height=${cropHeight}`
+    );
+  }
+
   return { width: cropWidth, height: cropHeight, x, y };
 }
 
@@ -31,17 +50,30 @@ export default {
   /**
    * Make a thumbnail from an image file.
    * @param {string|Express.Multer.File} file
-   * @param {{width: number, height: number}} config
+   * @param {{width: number, height: number} | {max_width: number, max_height: number}} config
    */
   async makeOne(file, config) {
     try {
       const { buffer, originalname } = await readFile(file);
 
       const image = await Jimp.fromBuffer(buffer);
+
+      // Handle both thumbnail config (width/height) and original config (max_width/max_height)
+      const targetWidth = config.width || config.max_width;
+      const targetHeight = config.height || config.max_height;
+
+      if (!targetWidth || !targetHeight) {
+        throw new Error(
+          `Invalid config: missing dimensions. Received: ${JSON.stringify(
+            config
+          )}`
+        );
+      }
+
       const { x, y, width, height } = calcSize(
         image,
-        config.width,
-        config.height
+        targetWidth,
+        targetHeight
       );
       image.crop({
         x,
@@ -50,8 +82,8 @@ export default {
         h: height,
       });
       image.resize({
-        w: config.width,
-        h: config.height,
+        w: targetWidth,
+        h: targetHeight,
         mode: Jimp.RESIZE_BILINEAR,
       });
       const fs = await import("fs/promises");
