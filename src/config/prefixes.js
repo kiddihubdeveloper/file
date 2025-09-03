@@ -4,7 +4,7 @@
  */
 export const UPLOAD_PREFIXES = ["avatar", "1"];
 
-export const DEFAULT_PREFIX = "image";
+export const DEFAULT_PREFIX = "images";
 
 /**
  * Validate if prefix is allowed

@@ -5,6 +5,30 @@ import Thumnail from "../Thumnail.js";
 import S3 from "../../../clients/S3/index.js";
 
 /**
+ * Process original file with size constraints
+ * @param {Express.Multer.File} file
+ * @param {string} folderPrefix - Folder prefix for S3 storage
+ * @param {object} origConfig - Original image config {max_width, max_height}
+ * @param {number} timestamp - Specific timestamp to use
+ * @returns {Promise<string>} S3 result filename
+ */
+async function processOriginalImage(file, folderPrefix, origConfig, timestamp) {
+  const origFileName = buildFileName(file.originalname, null);
+  const s3Key = `${folderPrefix}/${timestamp}-${origFileName}`;
+  const destDir = `tmp/digest/${folderPrefix}`;
+  await fs.mkdir(destDir, { recursive: true });
+  const destPath = `${destDir}/${origFileName}`;
+
+  // Process image with size constraints
+  const processedPath = await Thumnail.makeOne(file, origConfig);
+  await fs.rename(processedPath, destPath);
+
+  const s3Result = await S3.PutObject({ ...file, path: destPath }, s3Key);
+  await fs.unlink(destPath);
+  return s3Result.filename;
+}
+
+/**
  * Process single file for one device type with specific timestamp
  * @param {Express.Multer.File} file
  * @param {string} folderPrefix - Folder prefix for S3 storage
@@ -57,14 +81,14 @@ export async function handleSchoolThumbnail(
       const s3Filename = await processDeviceVariantWithTimestamp(
         file,
         folderPrefix,
-        "mobile",
+        null,
         size,
         timestamp
       );
       // Return clean filename without device suffix
       const cleanFileName = buildFileName(file.originalname, null);
       const responseFilename = `${folderPrefix}/${timestamp}-${cleanFileName}`;
-      result.mobile.push(responseFilename);
+      result.mobile.push(s3Filename);
     }
   }
 
@@ -79,14 +103,14 @@ export async function handleSchoolThumbnail(
       const s3Filename = await processDeviceVariantWithTimestamp(
         file,
         folderPrefix,
-        "tablet",
+        null,
         size,
         timestamp
       );
       // Return clean filename without device suffix
       const cleanFileName = buildFileName(file.originalname, null);
       const responseFilename = `${folderPrefix}/${timestamp}-${cleanFileName}`;
-      result.tablet.push(responseFilename);
+      result.tablet.push(s3Filename);
     }
   }
 
@@ -121,64 +145,73 @@ export async function handleSchoolThumbnail(
  * Handle other categories uploads (returns array format)
  * @param {Array<Express.Multer.File>} fileList
  * @param {object} thumbConfig
+ * @param {object} origConfig - Original image config
  * @param {string} folderPrefix
  * @returns {Promise<Array<string>>}
  */
 export async function handleOtherCategories(
   fileList,
   thumbConfig,
+  origConfig,
   folderPrefix
 ) {
   const processedFiles = new Set();
   const responseFilenames = [];
 
-  // Process each file for each device type
+  // Process each file
   for (const file of fileList) {
-    // Generate one timestamp per file for all device variants
+    // Generate one timestamp per file
     const timestamp = Date.now();
 
-    // MOBILE
-    if (thumbConfig.mobile) {
-      const size = Array.isArray(thumbConfig.mobile)
-        ? thumbConfig.mobile[0]
-        : thumbConfig.mobile;
-      await processDeviceVariantWithTimestamp(
-        file,
-        folderPrefix,
-        "mobile",
-        size,
-        timestamp
-      );
+    // Process original image if origConfig exists
+    if (origConfig) {
+      await processOriginalImage(file, folderPrefix, origConfig, timestamp);
     }
 
-    // TABLET
-    if (thumbConfig.tablet) {
-      const size = Array.isArray(thumbConfig.tablet)
-        ? thumbConfig.tablet[0]
-        : thumbConfig.tablet;
-      await processDeviceVariantWithTimestamp(
-        file,
-        folderPrefix,
-        "tablet",
-        size,
-        timestamp
-      );
-    }
+    // Process thumbnails for each device type
+    if (thumbConfig) {
+      if (thumbConfig.mobile) {
+        // MOBILE
+        const size = Array.isArray(thumbConfig.mobile)
+          ? thumbConfig.mobile[0]
+          : thumbConfig.mobile;
+        await processDeviceVariantWithTimestamp(
+          file,
+          folderPrefix,
+          "mobile",
+          size,
+          timestamp
+        );
+      }
 
-    // DESKTOP
-    if (thumbConfig.desktop) {
-      const size = Array.isArray(thumbConfig.desktop)
-        ? thumbConfig.desktop[0]
-        : thumbConfig.desktop;
-      await processDeviceVariantWithTimestamp(
-        file,
-        folderPrefix,
-        "desktop",
-        size,
-        timestamp
-      );
-    }
+      // TABLET
+      if (thumbConfig.tablet) {
+        const size = Array.isArray(thumbConfig.tablet)
+          ? thumbConfig.tablet[0]
+          : thumbConfig.tablet;
+        await processDeviceVariantWithTimestamp(
+          file,
+          folderPrefix,
+          "tablet",
+          size,
+          timestamp
+        );
+      }
 
+      // DESKTOP
+      if (thumbConfig.desktop) {
+        const size = Array.isArray(thumbConfig.desktop)
+          ? thumbConfig.desktop[0]
+          : thumbConfig.desktop;
+        await processDeviceVariantWithTimestamp(
+          file,
+          folderPrefix,
+          "desktop",
+          size,
+          timestamp
+        );
+      }
+    }
     processedFiles.add(file.path);
 
     // Create response filename without device suffix but with actual timestamp

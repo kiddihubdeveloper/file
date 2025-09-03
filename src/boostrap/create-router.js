@@ -20,6 +20,9 @@ export default function () {
     ImageController.uploadMultipleByCategory
   );
   router.delete("/image/delete-by-key", ImageController.deleteByKey);
-
+  router.post(
+    "/image/transfer-image-url/:category",
+    ImageController.transferUrl
+  );
   return router;
 }

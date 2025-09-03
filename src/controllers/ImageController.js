@@ -1,10 +1,7 @@
-import S3 from "../clients/S3/index.js";
 import { StoreImage } from "../requests/StoreImage.js";
 import FileServices from "../services/File/index.js";
-import imageConfig from "../config/images.js";
-
-import uploadImage from "../services/Image/uploadImage.js";
 import ImageServices from "../services/Image/index.js";
+import { TransferImage } from "../requests/TransferImage.js";
 
 export default {
   // /**
@@ -28,7 +25,11 @@ export default {
     try {
       const { category } = req.params;
       const prefix = req.query.prefix || req.body.prefix || null;
-      const result = await uploadImage(req.files, category, prefix);
+      const result = await ImageServices.uploadImage(
+        req.files,
+        category,
+        prefix
+      );
       res.status(201).json({ message: "Images uploaded", files: result });
     } catch (error) {
       res.status(400).json({ error: error.message });
@@ -48,6 +49,47 @@ export default {
       res.status(200).json({ message: "Image deleted", key });
     } catch (error) {
       res.status(400).json({ error: error.message });
+    }
+  },
+
+  /**
+   * Transfer images from URLs to S3 by category
+   * @param {import('express').Request} req
+   * @param {import('express').Response} res
+   */
+  async transferUrl(req, res) {
+    try {
+      const { category } = req.params;
+      const prefix = req.query.prefix || req.body.prefix || null;
+
+      // Validate request
+      const { urls } = new TransferImage(req).validate();
+
+      const responseData = await ImageServices.transferUrl(
+        urls,
+        category,
+        prefix
+      );
+
+      return res.status(201).send({
+        message: "Images transferred",
+        files: responseData,
+      });
+    } catch (error) {
+      // Better error logging
+      if (error.details) {
+        // Joi validation error
+        console.error(
+          "Validation error:",
+          error.details.map((d) => d.message)
+        );
+        return res.status(400).send({
+          error: "Validation failed",
+          details: error.details.map((d) => d.message),
+        });
+      }
+
+      return res.status(400).send({ error: error.message });
     }
   },
 };
