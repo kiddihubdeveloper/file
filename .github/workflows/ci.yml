@@ -38,7 +38,7 @@ jobs:
           echo "${{ secrets.DEPLOY_TEST_ENV }}" > .env
 
       - name: Save build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: nuxt-build
           path: |
@@ -51,7 +51,7 @@ jobs:
     if: github.ref == 'refs/heads/develop'
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: nuxt-build
 
