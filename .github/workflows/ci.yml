@@ -67,11 +67,7 @@ jobs:
       - name: Deploy via rsync + ssh
         run: |
           sudo apt-get update && sudo apt-get install -y rsync
-          echo "Verifying resource files before transfer:"
-          ls -la resource/ || echo "Local resource/ directory doesn't exist!"
-
           rsync --progress -avzh --exclude='.git' -e "ssh -i ~/.ssh/id_rsa -p 24700" --rsync-path="sudo rsync" . "root@${{ secrets.TEST_INSTANCE_IP }}:~/newApp/${{ secrets.APP_NAME }}"
-
           ssh -i ~/.ssh/id_rsa -p 24700 root@${{ secrets.TEST_INSTANCE_IP }} "sudo mv ~/apps/${{ secrets.APP_NAME }} ~/tmpApp/${{ secrets.APP_NAME }}"
           ssh -i ~/.ssh/id_rsa -p 24700 root@${{ secrets.TEST_INSTANCE_IP }} "sudo mv ~/newApp/${{ secrets.APP_NAME }} ~/apps/${{ secrets.APP_NAME }}"
           ssh -i ~/.ssh/id_rsa -p 24700 root@${{ secrets.TEST_INSTANCE_IP }} "sudo rm -rf ~/tmpApp/${{ secrets.APP_NAME }}"
