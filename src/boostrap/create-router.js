@@ -7,18 +7,19 @@ import fileConfig from "../config/file.js";
 const router = express.Router();
 
 export default function () {
-  //
   router.post("/file", uploader.single("file"), FileController.store);
-  //
   router.post(
     "/multiple-file",
     uploader.array("files", fileConfig.max_files),
     FileController.storeMultiple
   );
-  //
   router.post("/transfer-file-url", FileController.transferUrl);
-  //
-  router.post("/image", uploader.single("file"), ImageController.store);
-  //
+  router.post(
+    "/multiple-image/:category",
+    uploader.array("files", fileConfig.max_files),
+    ImageController.uploadMultipleByCategory
+  );
+  router.delete("/image/delete-by-key", ImageController.deleteByKey);
+
   return router;
 }
