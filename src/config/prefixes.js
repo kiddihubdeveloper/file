@@ -29,6 +29,6 @@ export function isValidPrefix(prefix) {
  * @returns {string}
  */
 export function getValidatedPrefix(prefix) {
-  if (!prefix) return DEFAULT_PREFIX;
+  if (!prefix) return null;
   return isValidPrefix(prefix) ? prefix : DEFAULT_PREFIX;
 }
