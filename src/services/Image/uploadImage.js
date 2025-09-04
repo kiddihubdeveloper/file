@@ -5,6 +5,7 @@ import S3 from "../../clients/S3/index.js";
 import {
   buildFileName,
   buildResponseFileName,
+  extractFilenameParts,
 } from "./helpers/fileNameBuilder.js";
 import {
   handleSchoolThumbnail,
@@ -17,7 +18,7 @@ import { getValidatedPrefix } from "../../config/prefixes.js";
  * @param {Express.Multer.File|Array<Express.Multer.File>} files
  * @param {string} category
  * @param {string} [prefix]
- * @returns {Promise<Array<string>|object>}
+ * @returns {Promise<Array<object>|object>} Array of {k, e, c?} or school-thumbnail object format
  */
 export default async function uploadImage(files, category, prefix = null) {
   const isArray = Array.isArray(files);
@@ -34,7 +35,12 @@ export default async function uploadImage(files, category, prefix = null) {
   if (isArray && (thumbConfig || origConfig)) {
     // Special case for school-thumbnail: return object with device types
     if (category === "school-thumbnail") {
-      return await handleSchoolThumbnail(fileList, thumbConfig, folderPrefix);
+      return await handleSchoolThumbnail(
+        fileList,
+        thumbConfig,
+        folderPrefix,
+        category
+      );
     }
 
     // Other categories: process each file for each device, return flat array
@@ -42,7 +48,8 @@ export default async function uploadImage(files, category, prefix = null) {
       fileList,
       thumbConfig,
       origConfig,
-      folderPrefix
+      folderPrefix,
+      category
     );
   }
 
@@ -60,8 +67,8 @@ export default async function uploadImage(files, category, prefix = null) {
  * @param {Array<Express.Multer.File>} fileList
  * @param {object} thumbConfig
  * @param {object} origConfig
- * @param {string} folderPrefix
- * @returns {Promise<Array<string>>}
+ * @param {string|null} folderPrefix - Folder prefix (can be null)
+ * @returns {Promise<Array<object>>} Array of {k, e, c?}
  */
 async function handleSingleFileUploads(
   fileList,
@@ -69,20 +76,33 @@ async function handleSingleFileUploads(
   origConfig,
   folderPrefix
 ) {
-  const resultPaths = [];
+  const responseObjects = [];
 
   for (const file of fileList) {
+    const timestamp = Date.now();
+    const { baseName, ext } = extractFilenameParts(file.originalname);
+
     // Process original file if config exists
     if (origConfig) {
-      const origFileName = buildFileName(file.originalname, null);
-      const s3Key = `${folderPrefix}/${Date.now()}-${origFileName}`;
+      const origFileName = buildFileName(baseName, ext, null);
+      const s3Key = folderPrefix
+        ? `${folderPrefix}/${timestamp}-${origFileName}`
+        : `${timestamp}-${origFileName}`;
       const origPath = `tmp/original/${origFileName}`;
       await fs.copyFile(file.path, origPath);
       // Upload to S3
-      const s3Result = await S3.PutObject({ ...file, path: origPath }, s3Key);
+      await S3.PutObject({ ...file, path: origPath }, s3Key);
       await fs.unlink(origPath);
-      resultPaths.push(s3Result.filename);
       await fs.unlink(file.path);
+
+      // Create response object
+      const responseObject = {
+        k: folderPrefix
+          ? `${folderPrefix}/${timestamp}-${baseName}`
+          : `${timestamp}-${baseName}`,
+        e: `.${ext}`,
+      };
+      responseObjects.push(responseObject);
       continue;
     }
 
@@ -91,17 +111,26 @@ async function handleSingleFileUploads(
       let found = false;
       for (const device of ["mobile", "tablet", "desktop"]) {
         if (thumbConfig[device]) {
-          const thumbFileName = buildFileName(file.originalname, device);
-          const s3Key = `${folderPrefix}/${Date.now()}-${thumbFileName}`;
+          const deviceSuffix =
+            device === "mobile" ? "xs" : device === "tablet" ? "md" : "lg";
+          const thumbFileName = buildFileName(baseName, ext, deviceSuffix);
+          const s3Key = folderPrefix
+            ? `${folderPrefix}/${timestamp}-${thumbFileName}`
+            : `${timestamp}-${thumbFileName}`;
           const thumbPath = await Thumnail.makeOne(file, thumbConfig[device]);
           const destPath = `tmp/digest/${thumbFileName}`;
           await fs.rename(thumbPath, destPath);
-          const s3Result = await S3.PutObject(
-            { ...file, path: destPath },
-            s3Key
-          );
+          await S3.PutObject({ ...file, path: destPath }, s3Key);
           await fs.unlink(destPath);
-          resultPaths.push(s3Result.filename);
+
+          // Create response object for this device variant
+          const responseObject = {
+            k: folderPrefix
+              ? `${folderPrefix}/${timestamp}-${baseName}_${deviceSuffix}`
+              : `${timestamp}-${baseName}_${deviceSuffix}`,
+            e: `.${ext}`,
+          };
+          responseObjects.push(responseObject);
           found = true;
         }
       }
@@ -112,12 +141,22 @@ async function handleSingleFileUploads(
     }
 
     // Fallback: just upload original file
-    const origFileName = buildFileName(file.originalname, null);
-    const s3Key = `${folderPrefix}/${Date.now()}-${origFileName}`;
-    const s3Result = await S3.PutObject(file, s3Key);
-    resultPaths.push(s3Result.filename);
+    const origFileName = buildFileName(baseName, ext, null);
+    const s3Key = folderPrefix
+      ? `${folderPrefix}/${timestamp}-${origFileName}`
+      : `${timestamp}-${origFileName}`;
+    await S3.PutObject(file, s3Key);
     await fs.unlink(file.path);
+
+    // Create response object for fallback
+    const responseObject = {
+      k: folderPrefix
+        ? `${folderPrefix}/${timestamp}-${baseName}`
+        : `${timestamp}-${baseName}`,
+      e: `.${ext}`,
+    };
+    responseObjects.push(responseObject);
   }
 
-  return resultPaths;
+  return responseObjects;
 }

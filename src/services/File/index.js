@@ -1,6 +1,6 @@
 import S3 from "../../clients/S3/index.js";
 import fs from "fs";
-
+import uploadImage from "../Image/uploadImage.js";
 /**
  * Unlink temporary files
  * @param {Array<Express.Multer.File>} files
@@ -30,11 +30,9 @@ async function upload(file, unlink = true) {
  * @returns {Promise<Array<{filename:string}>>}
  */
 async function uploadMultiple(files, unlink = true) {
-  const uploadResults = await Promise.all(
-    files.map((file) => S3.PutObject(file))
-  );
-  if (unlink) unlinkFiles(files);
-  return uploadResults;
+  const result = await uploadImage(files, null);
+  // uploadImage handles file cleanup internally, so we don't need to unlink here
+  return result;
 }
 
 /**
