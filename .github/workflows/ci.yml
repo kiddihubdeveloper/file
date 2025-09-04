@@ -72,6 +72,6 @@ jobs:
           ssh -i ~/.ssh/id_rsa -p 24700 root@${{ secrets.TEST_INSTANCE_IP }} "sudo mv ~/newApp/${{ secrets.APP_NAME }} ~/apps/${{ secrets.APP_NAME }}"
           ssh -i ~/.ssh/id_rsa -p 24700 root@${{ secrets.TEST_INSTANCE_IP }} "sudo rm -rf ~/tmpApp/${{ secrets.APP_NAME }}"
           ssh -i ~/.ssh/id_rsa -p 24700 root@${{ secrets.TEST_INSTANCE_IP }} "sudo chmod -R ug+w ~/apps/${{ secrets.APP_NAME }}"
-          ssh -i ~/.ssh/id_rsa -p 24700 root@${{ secrets.TEST_INSTANCE_IP }} "sudo chown -R $USER:www-data ~/apps/${{ secrets.APP_NAME }}"
+          ssh -i ~/.ssh/id_rsa -p 24700 root@${{ secrets.TEST_INSTANCE_IP }} "sudo chown -R root:www-data ~/apps/${{ secrets.APP_NAME }}"
           ssh -i ~/.ssh/id_rsa -p 24700 root@${{ secrets.TEST_INSTANCE_IP }} "cp ~/docker/Dockerfile.${{ secrets.APP_NAME }}.txt ~/apps/${{ secrets.APP_NAME }}/Dockerfile"
           ssh -i ~/.ssh/id_rsa -p 24700 root@${{ secrets.TEST_INSTANCE_IP }} "docker compose restart ${{ secrets.APP_NAME }}-app"
