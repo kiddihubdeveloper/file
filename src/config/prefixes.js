@@ -1,3 +1,6 @@
+import env from "dotenv";
+
+env.config();
 /**
  * Prefix configuration for uploads
  * Defines allowed prefixes for organizing files
@@ -28,7 +31,11 @@ export function isValidPrefix(prefix) {
  * @param {string|null} prefix
  * @returns {string}
  */
-export function getValidatedPrefix(prefix) {
+export function getValidatedPrefix(prefix, checkPrefix = false) {
+  if (process.env.APP_ENV == "local") return "test";
   if (!prefix) return null;
-  return isValidPrefix(prefix) ? prefix : DEFAULT_PREFIX;
+  if (checkPrefix) {
+    return isValidPrefix(prefix) ? prefix : DEFAULT_PREFIX;
+  }
+  return prefix;
 }

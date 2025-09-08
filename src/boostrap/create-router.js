@@ -24,5 +24,10 @@ export default function () {
     "/image/transfer-image-url/:category",
     ImageController.transferUrl
   );
+  router.post(
+    "/migrate",
+    uploader.array("files"),
+    ImageController.migrateImages
+  );
   return router;
 }

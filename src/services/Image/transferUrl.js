@@ -109,7 +109,7 @@ export default async function transferUrl(urls, category, prefix = null) {
     const files = await Promise.all(downloadPromises);
 
     // Use existing uploadImage service with downloaded files
-    const result = await uploadImage(files, category, prefix);
+    const result = await uploadImage(files, category, prefix, true);
 
     return result;
   } catch (error) {

@@ -22,7 +22,8 @@ export default {
    */
   async storeMultiple(req, res) {
     try {
-      const responseData = await FileServices.uploadMultiple(req.files);
+      const { prefix } = req.query;
+      const responseData = await FileServices.uploadMultiple(req.files, prefix);
       return res.status(201).send({
         data: responseData,
       });

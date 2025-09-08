@@ -27,10 +27,11 @@ async function upload(file, unlink = true) {
 /**
  * Upload multiple files to S3
  * @param {Array<Express.Multer.File>} files
+ * @param {string|null} prefix - Optional prefix for S3 keys
  * @returns {Promise<Array<{filename:string}>>}
  */
-async function uploadMultiple(files, unlink = true) {
-  const result = await uploadImage(files, null);
+async function uploadMultiple(files, prefix) {
+  const result = await uploadImage(files, null, prefix);
   // uploadImage handles file cleanup internally, so we don't need to unlink here
   return result;
 }
