@@ -24,15 +24,30 @@ export default {
   async uploadMultipleByCategory(req, res) {
     try {
       const { category } = req.params;
-      const prefix = req.query.prefix || req.body.prefix || null;
-      const result = await ImageServices.uploadImage(
-        req.files,
-        category,
-        prefix
-      );
-      res.status(201).json({ message: "Images uploaded", files: result });
+      const { prefix } = req.query;
+      const files = req.files;
+
+      if (!files || files.length === 0) {
+        return res.status(400).json({
+          status: "error",
+          message: "No files uploaded",
+        });
+      }
+
+      // For multiple-image endpoint, bypass prefix validation completely
+      // Pass prefix directly without validation
+      const result = await ImageServices.uploadImage(files, category, prefix);
+
+      res.status(200).json({
+        status: "success",
+        data: result,
+      });
     } catch (error) {
-      res.status(400).json({ error: error.message });
+      console.error("Upload error:", error);
+      res.status(500).json({
+        status: "error",
+        message: error.message || "Failed to upload images",
+      });
     }
   },
 
@@ -90,6 +105,37 @@ export default {
       }
 
       return res.status(400).send({ error: error.message });
+    }
+  },
+
+  async migrateImages(req, res) {
+    try {
+      const { prefix } = req.query;
+
+      const files = req.files;
+      if (!files || files.length === 0) {
+        return res.status(400).json({
+          status: "error",
+          message: "No files uploaded",
+        });
+      }
+
+      const result = await ImageServices.uploadImage(
+        files,
+        null,
+        prefix,
+        false,
+        false
+      );
+      res.status(200).json({
+        status: "success",
+        data: result,
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: "error",
+        message: error.message || "Failed to upload images",
+      });
     }
   },
 };
