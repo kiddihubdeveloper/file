@@ -3,7 +3,7 @@ export default {
     avatar: {
       mobile: { width: 90, height: 90 },
       tablet: { width: 111, height: 111 },
-      desktop: { width: 128, height: 128 },
+      desktop: { width: 160, height: 160 },
     },
     "school-thumbnail": {
       mobile: [{ width: 369, height: 230 }],
@@ -29,5 +29,6 @@ export default {
   original: {
     "school-photos": { max_width: 966, max_height: 644 },
     content: { max_width: 966, max_height: 644 },
+    "og-images": { max_width: 600, max_height: 315 }
   },
 };
