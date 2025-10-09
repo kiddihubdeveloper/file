@@ -7,7 +7,12 @@ export default {
     },
     "school-thumbnail": {
       mobile: [{ width: 369, height: 230 }],
-      tablet: [],
+      tablet: [
+        { width: 474, height: 249 },
+        { width: 318, height: 165 },
+        { width: 159.19, height: 82.909 },
+        { width: 159.19, height: 82.909 }
+      ],
       desktop: [
         { width: 768, height: 352 },
         { width: 512, height: 235 },
