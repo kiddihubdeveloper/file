@@ -68,6 +68,62 @@ export default {
   },
 
   /**
+   * Delete multiple images by S3 keys array
+   */
+  async deleteByKeys(req, res) {
+    try {
+      let { keys } = req.body;
+
+      if (!keys || !Array.isArray(keys) || keys.length === 0) {
+        return res.status(400).json({
+          status: "error",
+          message: "Missing keys array or empty array"
+        });
+      }
+
+      // Remove leading slash if present for each key
+      const cleanedKeys = keys.map(key =>
+        typeof key === 'string' && key.startsWith("/") ? key.slice(1) : key
+      );
+
+      // Delete all images
+      const results = await Promise.allSettled(
+        cleanedKeys.map(key => ImageServices.deleteImageByKey(key))
+      );
+
+      // Separate successful and failed deletions
+      const successful = [];
+      const failed = [];
+
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          successful.push(cleanedKeys[index]);
+        } else {
+          failed.push({
+            key: cleanedKeys[index],
+            error: result.reason?.message || 'Unknown error'
+          });
+        }
+      });
+
+      res.status(200).json({
+        status: "success",
+        message: `${successful.length} images deleted, ${failed.length} failed`,
+        data: {
+          successful,
+          failed,
+          total: cleanedKeys.length
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: "error",
+        message: error.message || "Failed to delete images"
+      });
+    }
+  },
+
+  /**
    * Transfer images from URLs to S3 by category
    * @param {import('express').Request} req
    * @param {import('express').Response} res
