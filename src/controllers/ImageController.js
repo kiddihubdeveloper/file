@@ -144,7 +144,7 @@ export default {
 
       return res.status(201).send({
         message: "Images transferred",
-        files: responseData,
+        data: responseData,
       });
     } catch (error) {
       // Better error logging
